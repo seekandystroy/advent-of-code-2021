@@ -6,9 +6,9 @@ end)
 |> Stream.drop(1)
 |> Enum.reduce([[], []], fn %{49 => ones, 48 => zeros}, [gamma, epsilon] ->
   if ones > zeros do
-    [['1' | gamma], ['0' | epsilon]]
+    [[49 | gamma], [48 | epsilon]]
   else
-    [['0' | gamma], ['1' | epsilon]]
+    [[48 | gamma], [49 | epsilon]]
   end
 end)
 |> Stream.map(&(Kernel.to_string(&1) |> String.to_integer(2)))
