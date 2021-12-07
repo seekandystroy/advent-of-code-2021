@@ -15,7 +15,11 @@ Enum.reduce(crabs_per_position, distances, fn {from, number_of_crabs}, distances
   updated_distances =
     Enum.map(distances, fn {to, fuel} ->
       steps = abs(from - to)
-      {to, fuel + Enum.sum(0..steps) * number_of_crabs}
+      # Enum.sum(0..steps)
+      # sum of an arithmetic sequence is
+      # n / 2 * (2 * a + (n - 1) * d)
+      # n = steps + 1 (to account for starting at 0), a = 0, d = 1
+      {to, fuel + div(steps * (steps + 1), 2) * number_of_crabs}
     end)
 
   updated_distances
