@@ -6,6 +6,25 @@ defmodule Origami do
   end
 
   def draw_points(points) do
+    {cols, _} = Enum.max(points, fn {x1, _y1}, {x2, _y2} -> x1 > x2 end)
+    {_, rows} = Enum.max(points, fn {_x1, y1}, {_x2, y2} -> y1 > y2 end)
+
+    base = Matrex.zeros(rows + 1, cols + 1)
+
+    Enum.reduce(points, base, fn {c, r}, grid ->
+      Matrex.set(grid, r + 1, c + 1, 1)
+    end)
+    |> Matrex.to_list_of_lists()
+    |> Enum.map(fn list ->
+      Enum.map(list, fn number ->
+        if number == 1 do
+          "#"
+        else
+          "."
+        end
+      end)
+    end)
+    |> IO.inspect(limit: :infinity, printable_limit: :infinity)
   end
 
   def fold(points, {"x", fold_line}) do
@@ -54,5 +73,4 @@ stream = File.stream!("input.txt")
   end)
 
 Origami.apply_folds(points, Enum.reverse(folds))
-|> length()
-|> IO.inspect()
+|> Origami.draw_points()
