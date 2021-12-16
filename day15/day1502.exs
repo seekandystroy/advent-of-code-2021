@@ -15,33 +15,44 @@ defmodule MatrixTraversal do
     matrix8 = plus_one_matrix(matrix7)
     matrix9 = plus_one_matrix(matrix8)
 
-    row1 = Matrex.concat([matrix, matrix2, matrix3, matrix4, matrix5])
-    row2 = Matrex.concat([matrix2, matrix3, matrix4, matrix5, matrix6])
-    row3 = Matrex.concat([matrix3, matrix4, matrix5, matrix6, matrix7])
-    row4 = Matrex.concat([matrix4, matrix5, matrix6, matrix7, matrix8])
-    row5 = Matrex.concat([matrix5, matrix6, matrix7, matrix8, matrix9])
-
-    Matrex.concat(row1, row2, :rows)
-    |> Matrex.concat(row3, :rows)
-    |> Matrex.concat(row4, :rows)
-    |> Matrex.concat(row5, :rows)
+    [
+      Matrex.concat([matrix, matrix2, matrix3, matrix4, matrix5]),
+      Matrex.concat([matrix2, matrix3, matrix4, matrix5, matrix6]),
+      Matrex.concat([matrix3, matrix4, matrix5, matrix6, matrix7]),
+      Matrex.concat([matrix4, matrix5, matrix6, matrix7, matrix8]),
+      Matrex.concat([matrix5, matrix6, matrix7, matrix8, matrix9])
+    ]
   end
 
-  defp plus_one_matrix(matrix) do
-    Matrex.add(matrix, 1)
-    |> Matrex.apply(fn val ->
-      if val == 10 do
-        1
-      else
-        val
-      end
-    end)
-  end
+  def min_spt_row_by_row([first | list_of_matrices]) do
+    {first_spt, first_costs} = min_spt(first, MapSet.new(), %{{1, 1} => 0})
 
-  def lowest_cost(matrix) do
-    cost_map = min_spt(matrix, MapSet.new(), %{{1, 1} => 0})
+    {_, _, costs} =
+      Enum.reduce(list_of_matrices, {first, first_spt, first_costs}, fn next_matrix,
+                                                                        {acc_matrix, spt, costs} ->
+        # update adjacents to the last row of the previous matrix, to kick off the algorithm
+        # after joining the matrices
+        prev_row = acc_matrix[:rows]
 
-    Map.get(cost_map, {matrix[:rows], matrix[:cols]})
+        new_costs =
+          Enum.reduce(1..acc_matrix[:cols], costs, fn col, new_costs ->
+            Map.put(
+              new_costs,
+              {prev_row + 1, col},
+              next_matrix[1][col] + Map.get(new_costs, {prev_row, col})
+            )
+          end)
+
+        new_acc_matrix =
+          Matrex.concat(acc_matrix, next_matrix, :rows)
+          |> IO.inspect()
+
+        {new_spt, new_costs} = min_spt(new_acc_matrix, spt, new_costs)
+
+        {new_acc_matrix, new_spt, new_costs}
+      end)
+
+    costs
   end
 
   defp min_spt(matrix, spt, distances) do
@@ -61,8 +72,8 @@ defmodule MatrixTraversal do
         end)
       end)
 
-    if MapSet.size(new_spt) == 250_000 do
-      new_distances
+    if MapSet.size(new_spt) == Matrex.size(matrix) |> Tuple.product() do
+      {new_spt, clean_distances(new_distances, matrix[:rows])}
     else
       min_spt(matrix, new_spt, new_distances)
     end
@@ -87,6 +98,22 @@ defmodule MatrixTraversal do
 
     adjacent_points
   end
+
+  defp plus_one_matrix(matrix) do
+    Matrex.add(matrix, 1)
+    |> Matrex.apply(fn val ->
+      if val == 10 do
+        1
+      else
+        val
+      end
+    end)
+  end
+
+  defp clean_distances(distances, r) do
+    Enum.filter(distances, fn {{row, _}, _} -> row == r end)
+    |> Map.new()
+  end
 end
 
 File.stream!("input.txt")
@@ -97,5 +124,6 @@ File.stream!("input.txt")
 end)
 |> Matrex.new()
 |> MatrixTraversal.gigantamax_maze()
-|> MatrixTraversal.lowest_cost()
+|> MatrixTraversal.min_spt_row_by_row()
+|> Map.get({500, 500})
 |> IO.inspect()
